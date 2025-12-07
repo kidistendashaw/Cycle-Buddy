@@ -9,3 +9,5 @@ class User(Base):
     full_name = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
+    cycles = relationship("Cycle", back_populates="user")
+
