@@ -11,3 +11,4 @@ class User(Base):
     password = Column(String, nullable=False)
     cycles = relationship("Cycle", back_populates="user")
 
+    notifications = relationship("Notification", back_populates="user")

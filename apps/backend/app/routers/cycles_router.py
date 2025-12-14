@@ -30,10 +30,10 @@ def calculate_cycle_phase(last_period: date, cycle_length: int, period_length: i
         tips = "Mood swings possible, try relaxation techniques"
 
     days_until_next_period = cycle_length - days_since_start + 1
-
     return days_since_start, phase, days_until_next_period, tips
 
 
+# Final updated add cycle route
 @router.post("/add", response_model=schemas.CycleCreate)
 def add_cycle(cycle: schemas.CycleCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
     new_cycle = models.Cycle(
@@ -46,6 +46,20 @@ def add_cycle(cycle: schemas.CycleCreate, db: Session = Depends(get_db), user=De
     db.add(new_cycle)
     db.commit()
     db.refresh(new_cycle)
+
+    
+    next_period = cycle.last_period_start + timedelta(days=cycle.cycle_length)
+    reminder_date = next_period - timedelta(days=7)
+
+    reminder = models.Notification(
+        user_id=user.id,
+        reminder_date=reminder_date,
+        message="Your period might start soon. Take care of yourself!"
+    )
+
+    db.add(reminder)
+    db.commit()
+
     return cycle
 
 
@@ -55,20 +69,4 @@ def current_cycle(db: Session = Depends(get_db), user=Depends(get_current_user))
     if not cycle:
         raise HTTPException(status_code=404, detail="No cycle data found")
     
-    current_day, phase, days_until_next_period, tips = calculate_cycle_phase(
-        cycle.last_period_start,
-        cycle.cycle_length,
-        cycle.period_length
-    )
-    return {
-        "current_day": current_day,
-        "phase": phase,
-        "days_until_next_period": days_until_next_period,
-        "tips": tips
-    }
-
-
-@router.get("/history")
-def cycle_history(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    cycles = db.query(models.Cycle).filter(models.Cycle.user_id == user.id).order_by(models.Cycle.last_period_start.desc()).all()
-    return cycles
+    current_day, phase, days_until_next_period,
